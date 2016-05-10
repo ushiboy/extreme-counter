@@ -1,4 +1,5 @@
-dist/
+build/
+tmp/
 ### https://raw.github.com/github/gitignore/3a0542080daab73605fad0a9e190794ef2fc722d/Node.gitignore
 
 # Logs
