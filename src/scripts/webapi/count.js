@@ -1,11 +1,7 @@
 import axios from 'axios';
-import config from '../config';
 
 export function fetchCount() {
-  const baseURL = config().baseURL;
-  return axios('/api/count', {
-    baseURL
-  })
+  return axios('/api/count')
   .then(res => {
     return res.data;
   });

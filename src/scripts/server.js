@@ -1,18 +1,19 @@
-import { index } from './backend-app';
+import { dispatch } from './backend-app';
 import connect from 'connect';
 import http from 'http';
 
-export function runServer(port=3002) {
+export function createServer() {
   const app = connect();
 
   app.use('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=UTF-8');
-    index().then(html => {
-      res.end(html);
+    // console.log(req.headers.cookie);
+    dispatch(req.url).then(({ html, status }) => {
+      res.end(html, status);
     }).catch(err => {
       console.log(err);
       res.end('Internal Server Error', 500);
     });
   });
-  http.createServer(app).listen(port);
+  return http.createServer(app);
 }

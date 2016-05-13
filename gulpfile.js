@@ -1,4 +1,4 @@
-var gulp = require('gulp')
+const gulp = require('gulp')
 , $ = require('gulp-load-plugins')()
 , path = require('path')
 , buildDir = path.join(__dirname, 'build')
@@ -45,13 +45,13 @@ gulp.task('js:dev', cb => {
       chunkModules: false
     }));
     cb();
-    $.livereload.reload();
+    // $.livereload.reload();
   });
 });
 
 gulp.task('js:app', cb => {
   fs.readFile(path.join(__dirname, '.babelrc'), { encoding: 'utf8' }, (error, data) => {
-    var babelConfig = JSON.parse(data);
+    const babelConfig = JSON.parse(data);
     gulp.src('src/scripts/**/*.js')
     .pipe($.babel(babelConfig))
     .pipe(gulp.dest(buildAppDir))
@@ -59,13 +59,30 @@ gulp.task('js:app', cb => {
   });
 });
 
-gulp.task('serve', ['js:app', 'js:dev'], () => {
-  var port = process.env.PORT || 3000;
-  var runServer = require('./build/app/server.js').runServer;
-  var runApiServer = require('./fixture/api');
+var renderingServer;
+gulp.task('serve:rendering', ['shutdown:rendering', 'js:app'], () => {
+  const createServer = require('./build/app/server.js').createServer;
+  const reg = new RegExp(buildAppDir);
+  Object.keys(require.cache).filter(path => path.match(reg)).forEach(path => {
+    delete require.cache[path];
+  });
+  renderingServer = createServer();
+  renderingServer.listen(3002);
+});
+gulp.task('shutdown:rendering', cb => {
+  if (renderingServer) {
+    renderingServer.on('close', cb);
+    renderingServer.close();
+  } else {
+    cb();
+  }
+});
+
+gulp.task('serve', ['serve:rendering', 'js:dev'], () => {
+  const port = process.env.PORT || 3000;
+  const runApiServer = require('./fixture/api');
 
   runApiServer(3001);
-  runServer(3002);
 
   $.livereload.listen();
   connect()
@@ -87,7 +104,7 @@ gulp.task('serve', ['js:app', 'js:dev'], () => {
 });
 
 gulp.task('dev', ['serve'], () => {
-  gulp.watch('src/**/*.js', ['js:dev']);
+  gulp.watch('src/**/*.js', ['js:dev', 'serve:rendering']);
 });
 
 gulp.task('default', ['clean'], () => {
