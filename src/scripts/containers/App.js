@@ -1,40 +1,45 @@
 import React from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
-
-import Counter from '../components/Counter';
-import { plusCounter, minusCounter } from '../actions/count';
+import { match, navigate } from 'redux-routing';
 
 class App_ extends React.Component {
 
   render() {
-    return (
-      <Counter count={this.props.count}
-        onPlusClick={this.handlePlus.bind(this)}
-        onMinusClick={this.handleMinus.bind(this)} />
-    );
+    const { route, routes } = this.props;
+    const matched = match(route.href, routes);
+    if (matched) {
+      return (
+        <div>
+          <ul>
+            <li><a href="/" onClick={this.handleLink.bind(this)}>Home</a></li>
+            <li><a href="/about" onClick={this.handleLink.bind(this)}>About</a></li>
+          </ul>
+          <matched.handler {...this.props} />
+        </div>
+      );
+    } else {
+      return <h1>404 not found</h1>;
+    }
   }
 
-  handlePlus() {
-    this.props.actions.plusCounter();
-  }
-
-  handleMinus() {
-    this.props.actions.minusCounter();
+  handleLink(e) {
+    e.preventDefault();
+    this.props.actions.navigate(e.target.href);
   }
 
 }
 
-function mapStateToProps(state) {
-  const { count } = state;
-  return { count };
+function mapStateToProps(state, props) {
+  const { routes } = props;
+  const { route } = state;
+  return { route, routes };
 }
 
 function mapDispatchToProps(dispatch) {
   return {
     actions: bindActionCreators({
-      plusCounter,
-      minusCounter
+      navigate
     }, dispatch)
   };
 }

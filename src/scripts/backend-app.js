@@ -1,19 +1,33 @@
 import { renderToString } from 'react-dom/server';
+import { match } from 'redux-routing';
 
 import application from './application';
 import { fetchCount } from './webapi/count';
-import config from './config';
+import routes from './routes';
+import axios from 'axios';
 
-config({baseURL: 'http://localhost:3001' });
+axios.defaults.baseURL = 'http://localhost:3001';
 
-export function index() {
-  return fetchCount()
+const initialActions = {
+  '/about': () => Promise.resolve(),
+  '/': () => fetchCount()
+};
+
+export function dispatch(href) {
+  const matched = match(href, routes);
+  const initialAction = matched && initialActions[matched.path] || null;
+  if (!matched || !initialAction) {
+    return Promise.resolve({ html: '', status: 404 });
+  }
+  return initialAction()
   .then(json => {
-    const initialState = {
-      count: json.count
-    };
+    const initialState = Object.assign({}, {
+      route: {
+        href
+      }
+    }, json || {});
     const app = application(renderToString, initialState);
-    return `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -27,5 +41,10 @@ export function index() {
   <script src="scripts/app.js"></script>
 </body>
 </html>`;
+
+    return {
+      html,
+      status: 200
+    };
   });
 }
