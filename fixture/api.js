@@ -2,29 +2,51 @@ module.exports = runApiServer;
 
 function runApiServer(port) {
   port = port || 3001;
-  var connect = require('connect')
-  , http = require('http')
-  , app = connect()
+  var express = require('express')
+  , session = require('express-session')
+  , app = express()
   , state = {
     count: 0
   };
 
-  app.use('/api/count', (req, res) => {
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.end(JSON.stringify(state));
-  });
-  app.use('/api/vote', (req, res) => {
-    var method = req.method.toUpperCase();
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    if (method === 'POST') {
-      state.count += 1;
-    } else if (method === 'DELETE') {
-      state.count -= 1;
-    } else {
-      res.end('Method Not Allowed', 405);
-      return;
+  app.use(session({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      maxAge: 60000
     }
-    res.end(JSON.stringify(state));
+  }));
+  app.post('/api/login', (req, res) => {
+    req.session.user = 'authenticated';
+    req.session.save(() => {
+      res.end();
+    });
   });
-  http.createServer(app).listen(port);
+  app.delete('/api/logout', (req, res) => {
+    delete req.session.user;
+    req.session.destroy(() => {
+      res.status(204).end();
+    });
+  });
+  app.get('/api/count', (req, res) => {
+    res.json(state);
+  });
+  app.post('/api/vote', (req, res) => {
+    if (req.session.user) {
+      state.count += 1;
+      res.json(state);
+    } else {
+      res.status(403).end();
+    }
+  });
+  app.delete('/api/vote', (req, res) => {
+    if (req.session.user) {
+      state.count -= 1;
+      res.json(state);
+    } else {
+      res.status(403).end();
+    }
+  });
+  app.listen(port);
 }
