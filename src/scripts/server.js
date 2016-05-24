@@ -7,8 +7,7 @@ export function createServer() {
 
   app.use('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=UTF-8');
-    // console.log(req.headers.cookie);
-    dispatch(req.url).then(({ html, status }) => {
+    dispatch(req).then(({ html, status }) => {
       res.end(html, status);
     }).catch(err => {
       console.log(err);

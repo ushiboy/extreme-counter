@@ -45,7 +45,6 @@ gulp.task('js:dev', cb => {
       chunkModules: false
     }));
     cb();
-    // $.livereload.reload();
   });
 });
 
@@ -53,9 +52,13 @@ gulp.task('js:app', cb => {
   fs.readFile(path.join(__dirname, '.babelrc'), { encoding: 'utf8' }, (error, data) => {
     const babelConfig = JSON.parse(data);
     gulp.src('src/scripts/**/*.js')
+    .pipe($.plumber())
     .pipe($.babel(babelConfig))
     .pipe(gulp.dest(buildAppDir))
-    .on('end', cb);
+    .on('end', () => {
+      $.livereload.reload();
+      cb();
+    });
   });
 });
 

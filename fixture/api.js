@@ -48,5 +48,8 @@ function runApiServer(port) {
       res.status(403).end();
     }
   });
+  app.get('/api/session', (req, res) => {
+    res.json({ authenticated: req.session.user != null });
+  });
   app.listen(port);
 }
