@@ -2,30 +2,65 @@ import { renderToString } from 'react-dom/server';
 import { match } from 'redux-routing';
 
 import application from './application';
-import { fetchCount } from './webapi/count';
+import { fetchCount, fetchSession } from './webapi/count';
 import routes from './routes';
 import axios from 'axios';
 
-axios.defaults.baseURL = 'http://localhost:3001';
 
-const initialActions = {
-  '/about': () => Promise.resolve(),
-  '/': () => fetchCount()
+function about(axios) {
+  return fetchSession(axios)
+  .then(({authenticated}) => {
+    return {
+      session: {
+        authenticated
+      },
+      enableLoading: true
+    };
+  });
+}
+
+function index(axios) {
+  return Promise.all([
+    fetchCount(axios),
+    fetchSession(axios)
+  ]).then(([{count}, {authenticated}]) => {
+    return {
+      count,
+      session: {
+        authenticated
+      }
+    };
+  });
+}
+
+const routeHandlers = {
+  '/about': about,
+  '/': index
 };
 
-export function dispatch(href) {
-  const matched = match(href, routes);
-  const initialAction = matched && initialActions[matched.path] || null;
-  if (!matched || !initialAction) {
+export function dispatch(req) {
+  const { url, headers } = req;
+  const matched = match(url, routes);
+  const routeHandler = matched ? routeHandlers[matched.path] : null;
+  if (!routeHandler) {
     return Promise.resolve({ html: '', status: 404 });
   }
-  return initialAction()
-  .then(json => {
+
+  const configuredAxios = axios.create({
+    baseURL: 'http://localhost:3001',
+    headers: {
+      'Cookie': headers.cookie || ''
+    }
+  });
+
+  return routeHandler(configuredAxios)
+  .then(routeState => {
     const initialState = Object.assign({}, {
       route: {
-        href
+        href: url
       }
-    }, json || {});
+    }, routeState || {});
+
     const app = application(renderToString, initialState);
     const html = `<!DOCTYPE html>
 <html lang="en">

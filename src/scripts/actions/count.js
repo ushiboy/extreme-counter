@@ -1,5 +1,5 @@
 import { UPDATE_COUNTER } from '../constants';
-import { upVote, downVote, fetchCount as _fetchCount } from '../webapi/count';
+import webapi from '../webapi';
 import { enableLoading } from './enableLoading';
 
 export function fetchCountIfNeeded() {
@@ -14,7 +14,7 @@ export function fetchCountIfNeeded() {
 
 export function fetchCount() {
   return dispatch => {
-    _fetchCount().then(json => {
+    webapi.fetchCount().then(json => {
       dispatch({
         type: UPDATE_COUNTER,
         payload: json.count
@@ -25,7 +25,7 @@ export function fetchCount() {
 
 export function plusCounter() {
   return dispatch => {
-    upVote().then(json => {
+    webapi.upVote().then(json => {
       dispatch({
         type: UPDATE_COUNTER,
         payload: json.count
@@ -36,7 +36,7 @@ export function plusCounter() {
 
 export function minusCounter() {
   return dispatch => {
-    downVote().then(json => {
+    webapi.downVote().then(json => {
       dispatch({
         type: UPDATE_COUNTER,
         payload: json.count
